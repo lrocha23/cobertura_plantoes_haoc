@@ -5,9 +5,9 @@ import os
 st.set_page_config(page_title="Plantões UTI", layout="wide")
 
 # ============================
-# 0) SENHA ÚNICA PARA TODOS
+# 0) SENHA ÚNICA
 # ============================
-SENHA = "1234"  # <<< TROQUE AQUI
+SENHA = "1234"
 
 senha_digitada = st.sidebar.text_input("Senha de acesso", type="password")
 
@@ -38,33 +38,28 @@ df = pd.read_csv(CSV_PATH)
 colunas_candidatos = ["candidato1", "candidato2", "candidato3", "candidato4", "candidato5"]
 
 column_config = {
-    col: st.column_config.SelectboxColumn(options=nomes_medicos)
+    col: st.column_config.SelectboxColumn(
+        label=col,
+        options=[""] + nomes_medicos,
+        required=False
+    )
     for col in colunas_candidatos
 }
 
 # ============================
-# 4) Travar células já preenchidas
-# ============================
-disabled_cols = {}
-
-for col in colunas_candidatos:
-    disabled_cols[col] = df[col].notna() & (df[col] != "")
-
-# ============================
-# 5) Editor com dropdown
+# 4) Editor com dropdown
 # ============================
 st.title("📋 Inscrição de Plantões - UTI")
 
 df_editado = st.data_editor(
     df,
     column_config=column_config,
-    disabled=disabled_cols,
-    key="editor",
-    use_container_width=True
+    use_container_width=True,
+    key="editor"
 )
 
 # ============================
-# 6) Impedir duplicidade na mesma linha
+# 5) Impedir duplicidade na mesma linha
 # ============================
 for idx, row in df_editado.iterrows():
     candidatos = [row[col] for col in colunas_candidatos]
@@ -75,15 +70,24 @@ for idx, row in df_editado.iterrows():
         st.stop()
 
 # ============================
-# 7) Botão de salvar
+# 6) Botão de salvar
 # ============================
 if st.button("Salvar alterações"):
     df_editado.to_csv(CSV_PATH, index=False)
-    st.success("✔️ Salvo com sucesso! As escolhas agora estão travadas.")
+    st.success("✔️ Salvo com sucesso! A tabela agora está travada.")
+    st.session_state["travado"] = True
     st.experimental_rerun()
 
 # ============================
-# 8) Exibe tabela final travada
+# 7) Travar tudo depois de salvar
+# ============================
+if st.session_state.get("travado", False):
+    st.subheader("📌 Tabela travada após salvar")
+    st.dataframe(df_editado, use_container_width=True)
+    st.stop()
+
+# ============================
+# 8) Exibe tabela editável (antes de salvar)
 # ============================
 st.subheader("📌 Situação atual dos plantões")
 st.dataframe(df_editado, use_container_width=True)
