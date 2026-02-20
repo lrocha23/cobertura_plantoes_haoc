@@ -33,10 +33,16 @@ if not os.path.exists(CSV_PATH):
 df = pd.read_csv(CSV_PATH)
 
 # ============================
-# 3) Configura dropdowns
+# 3) Corrige tipos das colunas (ESSENCIAL)
 # ============================
 colunas_candidatos = ["candidato1", "candidato2", "candidato3", "candidato4", "candidato5"]
 
+for col in colunas_candidatos:
+    df[col] = df[col].astype(str).replace("nan", "")
+
+# ============================
+# 4) Configura dropdowns
+# ============================
 column_config = {
     col: st.column_config.SelectboxColumn(
         label=col,
@@ -49,7 +55,7 @@ column_config = {
 st.title("📋 Inscrição de Plantões - UTI")
 
 # ============================
-# 4) Editor com dropdown
+# 5) Editor com dropdown
 # ============================
 df_editado = st.data_editor(
     df,
@@ -59,23 +65,30 @@ df_editado = st.data_editor(
 )
 
 # ============================
-# 5) Impedir duplicidade na mesma linha
+# 6) Impedir duplicidade na mesma linha
 # ============================
 for idx, row in df_editado.iterrows():
     candidatos = [row[col] for col in colunas_candidatos]
-    candidatos_limpos = [c for c in candidatos if c not in ["", None] and pd.notna(c)]
+    candidatos_limpos = [c for c in candidatos if c not in ["", None, ""]]
 
     if len(candidatos_limpos) != len(set(candidatos_limpos)):
         st.error(f"⚠️ Linha {idx+1}: o mesmo médico não pode aparecer duas vezes.")
         st.stop()
 
 # ============================
-# 6) Botão de salvar
+# 7) Botão de salvar
 # ============================
 if st.button("Salvar alterações"):
     df_editado.to_csv(CSV_PATH, index=False)
     st.success("✔️ Salvo com sucesso!")
 
+# ============================
+# 8) Exibe tabela salva
+# ============================
 st.subheader("📌 Situação atual dos plantões (arquivo salvo)")
 df_salvo = pd.read_csv(CSV_PATH)
+
+for col in colunas_candidatos:
+    df_salvo[col] = df_salvo[col].astype(str).replace("nan", "")
+
 st.dataframe(df_salvo, use_container_width=True)
